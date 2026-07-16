@@ -436,17 +436,21 @@ bearFVG = high < low[2] and (low[2] - high) >= atr * i_fvgMinATR
 var float bullFVG_top = na
 var float bullFVG_bot = na
 var bool  bullFVG_active = false
+var int   bullFVG_bar = na
 var float bearFVG_top = na
 var float bearFVG_bot = na
 var bool  bearFVG_active = false
+var int   bearFVG_bar = na
 
 if bullFVG
     bullFVG_top := low
     bullFVG_bot := high[2]
+    bullFVG_bar := bar_index - 2
     bullFVG_active := true
 if bearFVG
     bearFVG_top := low[2]
     bearFVG_bot := high
+    bearFVG_bar := bar_index - 2
     bearFVG_active := true
 
 if bullFVG_active and low <= bullFVG_bot
@@ -1240,21 +1244,27 @@ plotshape(i_showStruct and not na(extLow), title="Ext Low",
 var line lineExtH = na
 var line lineExtL = na
 
-if not na(extHigh)
+if i_showStruct and not na(extHigh)
     line.delete(lineExtH)
     lineExtH := line.new(bar_index - i_pivotLen, extHigh, bar_index + 5, extHigh,
          color=color.new(#ef5350, 50), style=line.style_dashed, width=1)
-if not na(extLow)
+if i_showStruct and not na(extLow)
     line.delete(lineExtL)
     lineExtL := line.new(bar_index - i_pivotLen, extLow, bar_index + 5, extLow,
          color=color.new(#26a69a, 50), style=line.style_dashed, width=1)
+if not i_showStruct and not na(lineExtH)
+    line.delete(lineExtH)
+    lineExtH := na
+if not i_showStruct and not na(lineExtL)
+    line.delete(lineExtL)
+    lineExtL := na
 
-if chochBull
+if i_showStruct and chochBull
     label.new(bar_index, low - atr * 0.5, "CHoCH ↑",
          color=color.new(#00e676, 0), textcolor=color.black,
          style=label.style_label_up, size=sizeLabel,
          tooltip="🔄 CHoCH BULLISH (Change of Character)\n\nWHAT: Market structure has broken UP. Previous lower highs are no longer being respected — buyers are taking control.\n\nWHY HERE:\n• Price closed ABOVE the last external swing high\n• Break distance > 0.5× ATR (filtered, not noise)\n• Prior structure was bearish (LH/LL) — this BREAKS that\n• Confirmed bar close (not just a wick)\n\nWHAT TO DO:\n• Bearish trend likely ENDING\n• Look for LONG entry on next pullback to OB/FVG\n• SL below the swing low that confirmed the CHoCH\n• High probability reversal — institutional buying detected")
-if chochBear
+if i_showStruct and chochBear
     label.new(bar_index, high + atr * 0.5, "CHoCH ↓",
          color=color.new(#ff1744, 0), textcolor=color.white,
          style=label.style_label_down, size=sizeLabel,
@@ -1309,28 +1319,36 @@ var label bullFVGTip  = na
 var box   bearFVGBox  = na
 var label bearFVGTip  = na
 
-if i_showFVG and bullFVG_active and bullFVG and barstate.islast
-    box.delete(bullFVGBox)
-    label.delete(bullFVGTip)
-    bullFVGBox := box.new(bar_index - 2, bullFVG_top, bar_index + 5, bullFVG_bot,
-         border_color=color.new(#00bcd4, 30), border_width=1,
-         bgcolor=color.new(#00bcd4, 90))
-    bullFVGTip := label.new(bar_index + 5, (bullFVG_top + bullFVG_bot) / 2, "BULL FVG",
-         color=color.new(#00bcd4, 0), textcolor=color.white,
-         style=label.style_label_left, size=size.tiny,
-         tooltip="⬜ BULLISH FAIR VALUE GAP (FVG)\n\nWHAT: A 3-candle imbalance where price moved so fast it left a gap. Institutions left unfilled orders here — price often returns to 'fill' this gap.\n\nWHY HERE:\n• Current low > high of 2 candles ago\n• Gap size > " + str.tostring(i_fvgMinATR) + "× ATR\n• Not yet filled by price retracement\n\nLEVELS:\n• Top: " + str.tostring(bullFVG_top, format.mintick) + "\n• Bot: " + str.tostring(bullFVG_bot, format.mintick) + "\n\nWHAT TO DO:\n• Magnet for price - high chance of retest\n• Good LONG zone if it aligns with bullish bias\n• Once filled, FVG is invalidated\n• Combine with OB for strongest entries")
-
-if i_showFVG and bearFVG_active and bearFVG and barstate.islast
-    box.delete(bearFVGBox)
-    label.delete(bearFVGTip)
-    bearFVGBox := box.new(bar_index - 2, bearFVG_top, bar_index + 5, bearFVG_bot,
-         border_color=color.new(#ff9800, 30), border_width=1,
-         bgcolor=color.new(#ff9800, 90))
-    bearFVGTip := label.new(bar_index + 5, (bearFVG_top + bearFVG_bot) / 2, "BEAR FVG",
-         color=color.new(#ff9800, 0), textcolor=color.white,
-         style=label.style_label_left, size=size.tiny,
-         tooltip="⬜ BEARISH FAIR VALUE GAP (FVG)\n\nWHAT: A 3-candle imbalance where price dropped so fast it left a gap. Institutions left unfilled sell orders here.\n\nWHY HERE:\n• Current high < low of 2 candles ago\n• Gap size > " + str.tostring(i_fvgMinATR) + "× ATR\n• Not yet filled by price retracement\n\nLEVELS:\n• Top: " + str.tostring(bearFVG_top, format.mintick) + "\n• Bot: " + str.tostring(bearFVG_bot, format.mintick) + "\n\nWHAT TO DO:\n• Magnet for price - high chance of retest\n• Good SHORT zone if it aligns with bearish bias\n• Once filled, FVG is invalidated\n• Combine with OB for strongest entries")
-
+if i_showFVG and bullFVG_active and barstate.islast
+    if bullFVG or na(bullFVGBox) or na(bullFVGTip)
+        box.delete(bullFVGBox)
+        label.delete(bullFVGTip)
+        bullFVGBox := box.new(not na(bullFVG_bar) ? bullFVG_bar : bar_index - 2, bullFVG_top, bar_index + 5, bullFVG_bot,
+             border_color=color.new(#00bcd4, 30), border_width=1,
+             bgcolor=color.new(#00bcd4, 90))
+        bullFVGTip := label.new(bar_index + 5, (bullFVG_top + bullFVG_bot) / 2, "BULL FVG",
+             color=color.new(#00bcd4, 0), textcolor=color.white,
+             style=label.style_label_left, size=size.tiny,
+             tooltip="⬜ BULLISH FAIR VALUE GAP (FVG)\n\nWHAT: A 3-candle imbalance where price moved so fast it left a gap. Institutions left unfilled orders here — price often returns to 'fill' this gap.\n\nWHY HERE:\n• Current low > high of 2 candles ago\n• Gap size > " + str.tostring(i_fvgMinATR) + "× ATR\n• Not yet filled by price retracement\n\nLEVELS:\n• Top: " + str.tostring(bullFVG_top, format.mintick) + "\n• Bot: " + str.tostring(bullFVG_bot, format.mintick) + "\n\nWHAT TO DO:\n• Magnet for price - high chance of retest\n• Good LONG zone if it aligns with bullish bias\n• Once filled, FVG is invalidated\n• Combine with OB for strongest entries")
+    else
+        box.set_right(bullFVGBox, bar_index + 5)
+        label.set_x(bullFVGTip, bar_index + 5)
+        label.set_y(bullFVGTip, (bullFVG_top + bullFVG_bot) / 2)
+if i_showFVG and bearFVG_active and barstate.islast
+    if bearFVG or na(bearFVGBox) or na(bearFVGTip)
+        box.delete(bearFVGBox)
+        label.delete(bearFVGTip)
+        bearFVGBox := box.new(not na(bearFVG_bar) ? bearFVG_bar : bar_index - 2, bearFVG_top, bar_index + 5, bearFVG_bot,
+             border_color=color.new(#ff9800, 30), border_width=1,
+             bgcolor=color.new(#ff9800, 90))
+        bearFVGTip := label.new(bar_index + 5, (bearFVG_top + bearFVG_bot) / 2, "BEAR FVG",
+             color=color.new(#ff9800, 0), textcolor=color.white,
+             style=label.style_label_left, size=size.tiny,
+             tooltip="⬜ BEARISH FAIR VALUE GAP (FVG)\n\nWHAT: A 3-candle imbalance where price dropped so fast it left a gap. Institutions left unfilled sell orders here.\n\nWHY HERE:\n• Current high < low of 2 candles ago\n• Gap size > " + str.tostring(i_fvgMinATR) + "× ATR\n• Not yet filled by price retracement\n\nLEVELS:\n• Top: " + str.tostring(bearFVG_top, format.mintick) + "\n• Bot: " + str.tostring(bearFVG_bot, format.mintick) + "\n\nWHAT TO DO:\n• Magnet for price - high chance of retest\n• Good SHORT zone if it aligns with bearish bias\n• Once filled, FVG is invalidated\n• Combine with OB for strongest entries")
+    else
+        box.set_right(bearFVGBox, bar_index + 5)
+        label.set_x(bearFVGTip, bar_index + 5)
+        label.set_y(bearFVGTip, (bearFVG_top + bearFVG_bot) / 2)
 if barstate.islast and (not i_showFVG or not bullFVG_active) and not na(bullFVGBox)
     box.delete(bullFVGBox)
     label.delete(bullFVGTip)
@@ -1414,8 +1432,8 @@ plot(i_showSLTP and strategy.position_size > 0 and i_useMultiTP ? longTP2_plan :
 plot(i_showSLTP and strategy.position_size < 0 ? shortSL : na, "SL Short", color=color.new(#ef5350, 0), style=plot.style_linebr, linewidth=2)
 plot(i_showSLTP and strategy.position_size < 0 ? shortTP1_plan : na, "TP1 Short", color=color.new(#00e676, 30), style=plot.style_linebr, linewidth=1)
 plot(i_showSLTP and strategy.position_size < 0 and i_useMultiTP ? shortTP2_plan : na, "TP2 Short", color=color.new(#00e676, 0),  style=plot.style_linebr, linewidth=2)
-plot(strategy.position_size > 0 ? longTrail  : na, "Trail Long",  color=color.new(#ffa726, 30), linewidth=2, style=plot.style_linebr)
-plot(strategy.position_size < 0 ? shortTrail : na, "Trail Short", color=color.new(#ffa726, 30), linewidth=2, style=plot.style_linebr)
+plot(i_showSLTP and strategy.position_size > 0 ? longTrail  : na, "Trail Long",  color=color.new(#ffa726, 30), linewidth=2, style=plot.style_linebr)
+plot(i_showSLTP and strategy.position_size < 0 ? shortTrail : na, "Trail Short", color=color.new(#ffa726, 30), linewidth=2, style=plot.style_linebr)
 
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║      🚨 GIANT SIGNAL BANNER — Pops up on every trade signal      ║
