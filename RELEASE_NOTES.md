@@ -14,7 +14,7 @@ Repository packaging release for Crypto Sniper Pro v5.
 
 ### Changed
 
-- Renamed the Pine source file from `crypto-sniper-pro-v5.pine.pine` to `crypto-sniper-pro-v5.pine`.
+- Confirmed the production Pine source file is `crypto-sniper-pro-v5.pine`.
 - Moved detailed documentation into `docs/`.
 
 ### Not Changed
